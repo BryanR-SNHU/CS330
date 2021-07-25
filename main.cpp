@@ -8,6 +8,8 @@
 
 
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <vector>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
@@ -73,140 +75,12 @@ glm::vec3 viewPosition( 0.0f, 0.0f, 1.0f);		// Position of camera for reflection
  */
 void UResizeWindow(int, int);
 void URenderGraphics();
+std::string UGetShaderString(const char* path);
 void UCreateShaders();
 void UCreateBuffers();
 void UMouseButton(int, int, int, int);
 void UMouseMove(int, int);
 void UKeyDown(unsigned char, int, int);
-
-/*
- * Vertex shader source code. Uses matrices to transform position of vertices.
- */
-const GLchar * vertexShaderSourceFlat = GLSL(440,
-	layout (location = 0) in vec3 position;
-	layout (location = 1) in vec3 normal;
-	layout (location = 2) in vec2 textureCoordinate;
-	
-	out vec2 mobileTextureCoordinate;
-	
-	uniform mat4 model;
-	uniform mat4 view;
-	uniform mat4 projection;
-	
-	void main()
-	{
-		gl_Position = projection * view * model * vec4(position, 1.0f);	// Apply all the matrix transforms to each vertex.
-		mobileTextureCoordinate = vec2(textureCoordinate.x, 1.0f - textureCoordinate.y);    // Flip the texture on the y axis.
-	}
-);
-
-const GLchar * vertexShaderSourceLit = GLSL(440,
-	layout (location = 0) in vec3 position;
-	layout (location = 1) in vec3 normal;
-	layout (location = 2) in vec2 textureCoordinate;
-	
-	out vec3 Normal;
-	out vec3 FragmentPos;
-	out vec2 mobileTextureCoordinate;
-	
-	uniform mat4 model;
-	uniform mat4 view;
-	uniform mat4 projection;
-	
-	void main()
-	{
-		gl_Position = projection * view * model * vec4(position, 1.0f);	// Apply all the matrix transforms to each vertex.
-		FragmentPos = vec3(model * vec4(position, 1.0f));
-		Normal = mat3(transpose(inverse(model))) * normal;
-		mobileTextureCoordinate = vec2(textureCoordinate.x, 1.0f - textureCoordinate.y);    // Flip the texture on the y axis.
-	}
-);
-
-const GLchar * fragmentShaderSourceFlat = GLSL(440,
-	in vec3 Normal;
-	in vec3 FragmentPos;
-	in vec2 mobileTextureCoordinate;
-
-	out vec4 gpuColor;
-
-    uniform sampler2D uTexture;
-	
-	void main()
-	{
-		gpuColor = texture(uTexture, mobileTextureCoordinate);    // Sample the texture at supplied coordinate
-	}
-);
-
-const GLchar * fragmentShaderSourceLit = GLSL(440,
-	in vec3 Normal;
-	in vec3 FragmentPos;
-	in vec2 mobileTextureCoordinate;
-
-	out vec4 gpuColor;
-
-	uniform sampler2D uTexture;
-	
-	uniform vec3 lightColor0;
-	uniform vec3 lightPos0;
-	uniform float lightFactor0;
-	uniform vec3 lightColor1;
-	uniform vec3 lightPos1;
-	uniform float lightFactor1;
-	uniform vec3 viewPosition;
-	
-	void main()
-	{
-		/*
-		 * Calculate the ambient light contribution.
-		 */
-		float ambientStrength = 0.1f;
-		vec3 ambient = ambientStrength * (lightColor0 + lightColor1);
-
-		/*
-		 * Calculate diffuse contribution of first light.
-		 */
-		vec3 norm0 = normalize(Normal);
-		vec3 lightDirection0 = normalize(lightPos0 - FragmentPos);
-		float impact0 = max( dot(norm0, lightDirection0), 0.0);
-		vec3 diffuse0 = impact0 * lightColor0 * lightFactor0;
-
-		/*
-		 * Calculate specular contribution of first light.
-		 */
-		float specularIntensity0 = 0.8f;
-		float highlightSize0 = 8.0f;
-		vec3 viewDir0 = normalize(viewPosition - FragmentPos);
-		vec3 reflectDir0 = reflect(-lightDirection0, norm0);
-
-		float specularComponent0 = pow( max( dot( viewDir0, reflectDir0), 0.0), highlightSize0);
-		vec3 specular0 = specularIntensity0 * specularComponent0 * lightColor0 * lightFactor0;
-
-		/*
-		 * Calculate diffuse contribution of second light.
-		 */
-		vec3 norm1 = normalize(Normal);
-		vec3 lightDirection1 = normalize(lightPos1 - FragmentPos);
-		float impact1 = max( dot(norm1, lightDirection1), 0.0);
-		vec3 diffuse1 = impact1 * lightColor1 * lightFactor1;
-
-		/*
-		 * Calculate specular contribution of second light.
-		 */
-		float specularIntensity1 = 1.0f;
-		float highlightSize1 = 16.0f;
-		vec3 viewDir1 = normalize(viewPosition - FragmentPos);
-		vec3 reflectDir1 = reflect(-lightDirection1, norm1);
-
-		float specularComponent1 = pow( max( dot( viewDir1, reflectDir1), 0.0), highlightSize1);
-		vec3 specular1 = specularIntensity1 * specularComponent1 * lightColor1 * lightFactor1;
-
-		vec4 texColor = texture(uTexture, mobileTextureCoordinate);    // Sample the texture at supplied coordinate
-
-		vec3 phong = (ambient + diffuse0 + diffuse1 + specular0 + specular1) * vec3(texColor.r, texColor.g, texColor.b);	// Mix the lights and texture sample.
-
-		gpuColor = vec4( phong, 1.0f);
-	}
-);
 
 int main(int argc, char* argv[])
 {
@@ -545,22 +419,46 @@ void URenderGraphics()
 	glutSwapBuffers();		// Switch the front and back buffers.
 }
 
+/*
+ * Returns a string containing the specified file's text.
+ */
+std::string UGetShaderString(const char* path)
+{
+	std::ifstream file(path);
+	std::ostringstream stream;
+	stream << file.rdbuf();
+	file.close();
+	return stream.str();
+}
+
 void UCreateShaders()
 {
+	std::string str0 = UGetShaderString("vertexFlat.glsl"); // Get source string.
+	const GLchar* vertexFlat = str0.c_str(); // Extract c style string to pass to openGL driver.
+
 	GLint vertexShaderFlat = glCreateShader(GL_VERTEX_SHADER);			// Get a pointer to an empty vertex shader.
-	glShaderSource(vertexShaderFlat, 1, &vertexShaderSourceFlat, NULL);		// Provide the vertex shader source code.
+	glShaderSource(vertexShaderFlat, 1, &vertexFlat, NULL);		// Provide the vertex shader source code.
 	glCompileShader(vertexShaderFlat);									// Compile the vertex shader
 
+	std::string str1 = UGetShaderString("vertexLit.glsl"); // Get source string.
+	const GLchar* vertexLit = str1.c_str(); // Extract c style string to pass to openGL driver.
+
 	GLint vertexShaderLit = glCreateShader(GL_VERTEX_SHADER);			// Get a pointer to an empty vertex shader.
-	glShaderSource(vertexShaderLit, 1, &vertexShaderSourceLit, NULL);		// Provide the vertex shader source code.
+	glShaderSource(vertexShaderLit, 1, &vertexLit, NULL);		// Provide the vertex shader source code.
 	glCompileShader(vertexShaderLit);									// Compile the vertex shader
 
+	std::string str2 = UGetShaderString("fragmentFlat.glsl"); // Get source string.
+	const GLchar* fragmentFlat = str2.c_str(); // Extract c style string to pass to openGL driver.
+
 	GLint fragmentShaderFlat = glCreateShader(GL_FRAGMENT_SHADER);		// Get a pointer to an empty fragment shader.
-	glShaderSource(fragmentShaderFlat, 1, &fragmentShaderSourceFlat, NULL);	// Provide the fragment shader source code.
+	glShaderSource(fragmentShaderFlat, 1, &fragmentFlat, NULL);	// Provide the fragment shader source code.
 	glCompileShader(fragmentShaderFlat);								// Compile the fragment shader
 
+	std::string str3 = UGetShaderString("fragmentLit.glsl"); // Get source string.
+	const GLchar* fragmentLit = str3.c_str(); // Extract c style string to pass to openGL driver.
+
 	GLint fragmentShaderLit = glCreateShader(GL_FRAGMENT_SHADER);		// Get a pointer to an empty fragment shader.
-	glShaderSource(fragmentShaderLit, 1, &fragmentShaderSourceLit, NULL);	// Provide the fragment shader source code.
+	glShaderSource(fragmentShaderLit, 1, &fragmentLit, NULL);	// Provide the fragment shader source code.
 	glCompileShader(fragmentShaderLit);
 
 	shaderProgramFlat = glCreateProgram();				// Get a pointer to an empty shader program.
