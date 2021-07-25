@@ -17,7 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "SOIL2/SOIL2.h"
-#include "mesh.h"
+#include "MeshGroup.h"
 
 using namespace std;
 
@@ -30,7 +30,7 @@ using namespace std;
 #define GLSL(Version, Source) "#version " #Version "\n" #Source
 #endif
 
-std::vector<mesh*> meshes;
+MeshGroup meshes;
 
 GLint shaderProgramFlat, shaderProgramLit;
 GLint WindowWidth = 800, WindowHeight = 600;
@@ -76,7 +76,6 @@ void UResizeWindow(int, int);
 void URenderGraphics();
 void UCreateShaders();
 void UCreateBuffers();
-void UGenerateTexture();
 void UMouseButton(int, int, int, int);
 void UMouseMove(int, int);
 void UKeyDown(unsigned char, int, int);
@@ -236,7 +235,8 @@ int main(int argc, char* argv[])
 	
 	UCreateBuffers();	// Define the data buffers.
 
-	UGenerateTexture();	// Load in an image as a texture
+	//UGenerateTexture();	// Load in an image as a texture
+	meshes.set_texture("brushed_steel.jpg");
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);	// Define the color that glClear() will use.
 
@@ -250,35 +250,7 @@ int main(int argc, char* argv[])
 
 	glutMainLoop();		// Enter GLUT's event processing loop.
 
-	/*
-	 * Free the memory being used for the buffers.
-	 */
-
-	for (mesh* mesh : meshes)
-	{
-		delete mesh;
-	}
-
 	return 0;
-}
-
-void UGenerateTexture()
-{
-    glGenTextures(1, &texture);             // Get a pointer to an empty texture.
-    glBindTexture(GL_TEXTURE_2D, texture);  // Configure it as a 2D texture.
-
-    int width, height;
-
-    unsigned char* image = SOIL_load_image("brushed_steel.jpg", &width, &height, 0 , SOIL_LOAD_RGB);    // Load an image as an array of bytes.
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);  // Upload the image data into the active texture.
-    glGenerateMipmap(GL_TEXTURE_2D);    // Generate a mipmap for the texture.
-    SOIL_free_image_data(image);        // Free the memory used by the intermediate image.
-
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);    // Unbind the texture.
 }
 
 /*
@@ -571,10 +543,7 @@ void URenderGraphics()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 	
-	for (mesh* mesh : meshes)
-	{
-		mesh->draw();
-	}
+	meshes.draw();
 
 	glBindVertexArray(0);	// Release VBO as the active array.
 
@@ -786,7 +755,7 @@ void UCreateBuffers()
 		22, 21, 23,
 	};
 
-	meshes.push_back(new mesh(vertices0, indices0));
+	meshes.add_mesh(vertices0, indices0);
 	
 	/*
 	 * Vertex buffer.
@@ -893,7 +862,7 @@ void UCreateBuffers()
 		46, 47, 45,
 	};
 
-	meshes.push_back(new mesh(vertices1, indices1));
+	meshes.add_mesh(vertices1, indices1);
 
 	/*
 	 * Vertex buffer.
@@ -999,7 +968,7 @@ void UCreateBuffers()
 		45, 47, 23,
 	};
 
-	meshes.push_back(new mesh(vertices2, indices2));
+	meshes.add_mesh(vertices2, indices2);
 
 	/*
 	 * Vertex buffer.
@@ -1105,7 +1074,7 @@ void UCreateBuffers()
 		44, 22, 46,
 	};
 
-	meshes.push_back(new mesh(vertices3, indices3));
+	meshes.add_mesh(vertices3, indices3);
 
 	/*
 	 * Vertex buffer.
@@ -1191,7 +1160,7 @@ void UCreateBuffers()
 		47, 22, 46
 	};
 
-	meshes.push_back(new mesh(vertices4, indices4));
+	meshes.add_mesh(vertices4, indices4);
 
-	glBindVertexArray(0);
+	//glBindVertexArray(0);
 }
