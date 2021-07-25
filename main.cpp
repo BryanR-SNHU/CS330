@@ -8,6 +8,7 @@
 
 
 #include <iostream>
+#include <vector>
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
@@ -16,6 +17,7 @@
 #include <glm/gtc/type_ptr.hpp>
 
 #include "SOIL2/SOIL2.h"
+#include "mesh.h"
 
 using namespace std;
 
@@ -28,10 +30,11 @@ using namespace std;
 #define GLSL(Version, Source) "#version " #Version "\n" #Source
 #endif
 
+std::vector<mesh*> meshes;
+
 GLint shaderProgramFlat, shaderProgramLit;
 GLint WindowWidth = 800, WindowHeight = 600;
 GLuint texture;
-GLuint VBO0, VBO1, VBO2, VBO3, VBO4, VAO0, VAO1, VAO2, VAO3, VAO4, EBO0, EBO1, EBO2, EBO3, EBO4, VAOtest, VBOtest;
 
 /*
  * Track state of mouse buttons.
@@ -51,10 +54,10 @@ GLfloat sensitivity = 0.5f;				// Speed of camera orbit.
 GLfloat zoomSpeed = 0.1f;				// Speed of camera zoom.
 bool mouseDetected = true;				// Use to reset last mouse position when mouse is redetected.
 
-glm::vec3 cameraPosition(0.0f, 0.0f, 0.0f);		// Location camera is pointed at.
-glm::vec3 cameraUpY(0.0f, 1.0f, 0.0f);			// Camera up vector.
-glm::vec3 CameraForwardZ(0.0f, 0.0f, 1.0f);		// Camera location.
-glm::vec3 front(0.0f, 0.0f, 10.0f);				// Temporary camera location.
+const glm::vec3 cameraPosition(0.0f, 0.0f, 0.0f);		// Location camera is pointed at.
+const glm::vec3 cameraUpY(0.0f, 1.0f, 0.0f);			// Camera up vector.
+const glm::vec3 CameraForwardZ(0.0f, 0.0f, 1.0f);		// Camera location.
+const glm::vec3 front(0.0f, 0.0f, 10.0f);				// Temporary camera location.
 
 glm::vec3 lightColor0( 1.0f, 0.9f, 0.9f);		// RGB color of the light.
 glm::vec3 lightPos0( 0.0f, 1.0f, 2.0f);			// XYZ position of the light.
@@ -250,23 +253,11 @@ int main(int argc, char* argv[])
 	/*
 	 * Free the memory being used for the buffers.
 	 */
-	glDeleteVertexArrays(1, &VAO0);
-	glDeleteVertexArrays(1, &VAO1);
-	glDeleteVertexArrays(1, &VAO2);
-	glDeleteVertexArrays(1, &VAO3);
-	glDeleteVertexArrays(1, &VAO4);
 
-	glDeleteBuffers(1, &VBO0);
-	glDeleteBuffers(1, &VBO1);
-	glDeleteBuffers(1, &VBO2);
-	glDeleteBuffers(1, &VBO3);
-	glDeleteBuffers(1, &VBO4);
-
-	glDeleteBuffers(1, &EBO0);
-	glDeleteBuffers(1, &EBO1);
-	glDeleteBuffers(1, &EBO2);
-	glDeleteBuffers(1, &EBO3);
-	glDeleteBuffers(1, &EBO4);
+	for (mesh* mesh : meshes)
+	{
+		delete mesh;
+	}
 
 	return 0;
 }
@@ -580,23 +571,10 @@ void URenderGraphics()
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 	}
 	
-	glBindVertexArray(VAO0);		// Activate VAO0 as the active array.
-	glDrawElements(GL_TRIANGLES, 69, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
-
-	glBindVertexArray(VAO1);		// Activate VAO1 as the active array.
-	glDrawElements(GL_TRIANGLES, 69, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
-
-	glBindVertexArray(VAO2);		// Activate VAO2 as the active array.
-	glDrawElements(GL_TRIANGLES, 66, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
-
-	glBindVertexArray(VAO3);		// Activate VAO3 as the active array.
-	glDrawElements(GL_TRIANGLES, 66, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
-
-	glBindVertexArray(VAO4);		// Activate VAO4 as the active array.
-	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
-
-	//glBindVertexArray(VAOtest);
-	//glDrawArrays(GL_TRIANGLES, 0, 6);
+	for (mesh* mesh : meshes)
+	{
+		mesh->draw();
+	}
 
 	glBindVertexArray(0);	// Release VBO as the active array.
 
@@ -706,7 +684,7 @@ void UCreateBuffers()
 	/*
 	 * Vertex buffer.
 	 */
-	GLfloat vertices0[] = {
+	std::vector<GLfloat> vertices0 = {
 		// Position data x,y,z | Normal data x,y,z | UV data u,v
 		// Front vertices
 		 0.1f,   1.0f,  0.15f,	 0.0f,  0.1f, -0.9f,  0.63f,  1.0f,  
@@ -781,7 +759,7 @@ void UCreateBuffers()
 	/*
 	 * Index buffer.
 	 */
-	GLuint indices0[] = {
+	std::vector<GLuint> indices0 = {
 		// Front triangles
 		4, 0, 5,
 		5, 1, 6,
@@ -808,31 +786,12 @@ void UCreateBuffers()
 		22, 21, 23,
 	};
 
-	glGenVertexArrays(1, &VAO0);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBO0);			// Generate a buffer, storing a pointer to it in VBO.
-	glGenBuffers(1, &EBO0);			// Generate a buffer, storing a pointer to it in EBO.
-
-	glBindVertexArray(VAO0);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO0);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices0), vertices0, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO0);		// Make EBO the active buffer.
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices0), indices0, GL_STATIC_DRAW);	// Send index data to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
+	meshes.push_back(new mesh(vertices0, indices0));
 	
 	/*
 	 * Vertex buffer.
 	 */
-	GLfloat vertices1[] = {
+	std::vector<GLfloat> vertices1 = {
 		// Position data x,y,z | Normal data x,y,z | UV data u,v
 		// Front vertices
 		 0.1f,   1.0f,  0.15f,	 0.0f,  0.0f, -1.0f,  0.63f,  1.0f,  
@@ -907,7 +866,7 @@ void UCreateBuffers()
 	/*
 	 * Index buffer.
 	 */
-	GLuint indices1[] = {
+	std::vector<GLuint> indices1 = {
 		// Back Triangles
 		28, 29, 24,
 		29, 30, 25,
@@ -934,31 +893,12 @@ void UCreateBuffers()
 		46, 47, 45,
 	};
 
-	glGenVertexArrays(1, &VAO1);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBO1);			// Generate a buffer, storing a pointer to it in VBO.
-	glGenBuffers(1, &EBO1);			// Generate a buffer, storing a pointer to it in EBO.
-
-	glBindVertexArray(VAO1);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO1);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices1), vertices1, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO1);		// Make EBO the active buffer.
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices1), indices1, GL_STATIC_DRAW);	// Send index data to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
+	meshes.push_back(new mesh(vertices1, indices1));
 
 	/*
 	 * Vertex buffer.
 	 */
-	GLfloat vertices2[] = {
+	std::vector<GLfloat> vertices2 = {
 		// Position data x,y,z | Normal data x,y,z | UV data u,v
 		// Front vertices
 		 0.1f,   1.0f,  0.15f,	-1.0f,  0.0f,  0.0f,  0.575f,  1.0f,  
@@ -1033,7 +973,7 @@ void UCreateBuffers()
 	/*
 	 * Index buffer.
 	 */
-	GLuint indices2[] = {
+	std::vector<GLuint> indices2 = {
 		// Left Triangles
 		5, 0, 24,
 		24, 29, 5,
@@ -1059,31 +999,12 @@ void UCreateBuffers()
 		45, 47, 23,
 	};
 
-	glGenVertexArrays(1, &VAO2);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBO2);			// Generate a buffer, storing a pointer to it in VBO.
-	glGenBuffers(1, &EBO2);			// Generate a buffer, storing a pointer to it in EBO.
-
-	glBindVertexArray(VAO2);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO2);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices2), vertices2, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO2);		// Make EBO the active buffer.
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices2), indices2, GL_STATIC_DRAW);	// Send index data to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
+	meshes.push_back(new mesh(vertices2, indices2));
 
 	/*
 	 * Vertex buffer.
 	 */
-	GLfloat vertices3[] = {
+	std::vector<GLfloat> vertices3 = {
 		// Position data x,y,z | Normal data x,y,z | UV data u,v
 		// Front vertices
 		 0.1f,   1.0f,  0.15f,	 1.0f,  0.0f,  0.0f,  0.575f,  1.0f,  
@@ -1158,7 +1079,7 @@ void UCreateBuffers()
 	/*
 	 * Index buffer.
 	 */
-	GLuint indices3[] = {
+	std::vector<GLuint> indices3 = {
 		// Right Triangles
 		3, 7, 27,
 		27, 31, 7,
@@ -1184,31 +1105,12 @@ void UCreateBuffers()
 		44, 22, 46,
 	};
 
-	glGenVertexArrays(1, &VAO3);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBO3);			// Generate a buffer, storing a pointer to it in VBO.
-	glGenBuffers(1, &EBO3);			// Generate a buffer, storing a pointer to it in EBO.
-
-	glBindVertexArray(VAO3);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO3);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices3), vertices3, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO3);		// Make EBO the active buffer.
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices3), indices3, GL_STATIC_DRAW);	// Send index data to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
+	meshes.push_back(new mesh(vertices3, indices3));
 
 	/*
 	 * Vertex buffer.
 	 */
-	GLfloat vertices4[] = {
+	std::vector<GLfloat> vertices4 = {
 		// Position data x,y,z | Normal data x,y,z | UV data u,v
 		// Front vertices
 		 0.1f,   1.0f,  0.15f,	 1.0f,  0.0f,  0.0f,  0.63f,  1.0f,  
@@ -1283,61 +1185,13 @@ void UCreateBuffers()
 	/*
 	 * Index buffer.
 	 */
-	GLuint indices4[] = {
+	std::vector<GLuint> indices4 = {
 		// Bottom Triangles
 		23, 22, 47,
 		47, 22, 46
 	};
 
-	glGenVertexArrays(1, &VAO4);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBO4);			// Generate a buffer, storing a pointer to it in VBO.
-	glGenBuffers(1, &EBO4);			// Generate a buffer, storing a pointer to it in EBO.
-
-	glBindVertexArray(VAO4);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBO4);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices4), vertices4, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO4);		// Make EBO the active buffer.
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices4), indices4, GL_STATIC_DRAW);	// Send index data to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
-
-	/*
-	GLfloat testVerts[] = {
-		-1.0f, 1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-		 1.0f, 1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-		 1.0f, -1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-
-		 1.0f, -1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f,
-		-1.0f, -1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f,
-		-1.0f, 1.0f, 2.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f,
-	};
-
-	glGenVertexArrays(1, &VAOtest);		// Generate a vertex array object, storing a pointer to it in VAO.
-	glGenBuffers(1, &VBOtest);			// Generate a buffer, storing a pointer to it in VBO.
-
-	glBindVertexArray(VAOtest);		// Make VAO the active array.
-
-	glBindBuffer(GL_ARRAY_BUFFER, VBOtest);		// Make VBO the active buffer.
-	glBufferData(GL_ARRAY_BUFFER, sizeof(testVerts), testVerts, GL_STATIC_DRAW);		// Send vertex data from VBO to GPU.
-
-	glEnableVertexAttribArray(0);	// Enable the first attribute array.
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (GLvoid*)0);	// Define the location of position data in the buffer.
-
-	glEnableVertexAttribArray(1);	// Enable the second attribute array.
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(3 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
-
-	glEnableVertexAttribArray(2);	// Enable the second attribute array.
-	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.	
-	*/
+	meshes.push_back(new mesh(vertices4, indices4));
 
 	glBindVertexArray(0);
 }
