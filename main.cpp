@@ -49,8 +49,8 @@ GLfloat lastMouseX = WindowWidth / 2, lastMouseY = WindowHeight / 2;	// Set init
 GLfloat mouseXOffset, mouseYOffset;		// Track the mouse delta.
 GLfloat yaw = 0.0f, pitch = 0.0f;		// Orbit variables.
 GLfloat zoomLevel = 0.0f;				// Distance of camera from focus point.
-GLfloat sensitivity = 0.5f;				// Speed of camera orbit.
-GLfloat zoomSpeed = 0.1f;				// Speed of camera zoom.
+const GLfloat sensitivity = 0.5f;				// Speed of camera orbit.
+const GLfloat zoomSpeed = 0.1f;				// Speed of camera zoom.
 bool mouseDetected = true;				// Use to reset last mouse position when mouse is redetected.
 
 const glm::vec3 cameraPosition(0.0f, 0.0f, 0.0f);		// Location camera is pointed at.
@@ -69,7 +69,7 @@ GLfloat lightFactor1 = 0.7f;					// Brightness of the light.
 glm::vec3 viewPosition( 0.0f, 0.0f, 1.0f);		// Position of camera for reflection calculation.
 
 /*
- * Forward declerations.
+ * Forward declarations.
  */
 void UResizeWindow(int, int);
 void URenderGraphics();
@@ -224,7 +224,7 @@ int main(int argc, char* argv[])
 	glewExperimental = GL_TRUE;
 	if (glewInit() != GLEW_OK)
 	{
-		std::cout << "Failed to intitialize GLEW" << std::endl;
+		std::cout << "Failed to initialize GLEW" << std::endl;
 		return -1;
 	}
 
