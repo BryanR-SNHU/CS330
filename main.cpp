@@ -56,8 +56,8 @@ bool mouseDetected = true;				// Use to reset last mouse position when mouse is 
 
 const glm::vec3 cameraPosition(0.0f, 0.0f, 0.0f);		// Location camera is pointed at.
 const glm::vec3 cameraUpY(0.0f, 1.0f, 0.0f);			// Camera up vector.
-const glm::vec3 CameraForwardZ(0.0f, 0.0f, 1.0f);		// Camera location.
-const glm::vec3 front(0.0f, 0.0f, 10.0f);				// Temporary camera location.
+glm::vec3 CameraForwardZ(0.0f, 0.0f, 1.0f);		// Camera location.
+glm::vec3 front(0.0f, 0.0f, 10.0f);				// Temporary camera location.
 
 glm::vec3 lightColor0( 1.0f, 0.9f, 0.9f);		// RGB color of the light.
 glm::vec3 lightPos0( 0.0f, 1.0f, 2.0f);			// XYZ position of the light.
