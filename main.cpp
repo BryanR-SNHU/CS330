@@ -34,7 +34,6 @@ MeshGroup meshes;
 
 GLint shaderProgramFlat, shaderProgramLit;
 GLint WindowWidth = 800, WindowHeight = 600;
-GLuint texture;
 
 /*
  * Track state of mouse buttons.
@@ -79,7 +78,6 @@ void UCreateBuffers();
 void UMouseButton(int, int, int, int);
 void UMouseMove(int, int);
 void UKeyDown(unsigned char, int, int);
-void UKeyUp(unsigned char, int, int);
 
 /*
  * Vertex shader source code. Uses matrices to transform position of vertices.
@@ -235,7 +233,6 @@ int main(int argc, char* argv[])
 	
 	UCreateBuffers();	// Define the data buffers.
 
-	//UGenerateTexture();	// Load in an image as a texture
 	meshes.set_texture("brushed_steel.jpg");
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);	// Define the color that glClear() will use.
@@ -528,8 +525,6 @@ void URenderGraphics()
 	}
 	
 	glutPostRedisplay();
-
-	glBindTexture(GL_TEXTURE_2D, texture);
 
 	/*
 	 * Choose wireframe or filled mode.

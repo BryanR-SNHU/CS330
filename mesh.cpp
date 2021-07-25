@@ -1,5 +1,8 @@
 #include "mesh.h"
 
+/*
+ * Create an attribute array on the graphics card, upload vertex and index data, and define the layout of the data.
+ */
 mesh::mesh(std::vector<GLfloat> vertices, std::vector<GLuint> indices)
 {
 	indices_count = indices.size();
@@ -24,14 +27,22 @@ mesh::mesh(std::vector<GLfloat> vertices, std::vector<GLuint> indices)
 
 	glEnableVertexAttribArray(2);	// Enable the second attribute array.
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(GLfloat), (char*)(6 * sizeof(GLfloat)));		// Define the location of color data in the buffer.
+	
+	glBindVertexArray(0);
 }
 
+/*
+ * Bind the current mesh's array and draw the triangles.
+ */
 void mesh::draw()
 {
 	glBindVertexArray(VAO);		// Activate VAO as the active array.
 	glDrawElements(GL_TRIANGLES, indices_count, GL_UNSIGNED_INT, 0);	// Draw triangles using both vertex and index buffer.
 }
 
+/*
+ * Tell the graphics card to free the memory used by the array and buffers.
+ */
 mesh::~mesh()
 {
 	glDeleteVertexArrays(1, &VAO);

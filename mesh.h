@@ -6,8 +6,8 @@
 
 class mesh {
 public:
-	GLuint VBO;
 	GLuint VAO;
+	GLuint VBO;
 	GLuint EBO;
 	GLuint indices_count;
 	
